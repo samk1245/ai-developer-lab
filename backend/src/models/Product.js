@@ -3,54 +3,41 @@ const mongoose = require("mongoose");
 const productSchema = new mongoose.Schema(
   {
     tenantId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Tenant",
+      type: String,
       required: true,
-      index: true,
+      index: true
     },
-
     name: {
       type: String,
       required: true,
-      trim: true,
+      trim: true
     },
-
     description: {
       type: String,
-      default: "",
+      default: ""
     },
-
     price: {
       type: Number,
       required: true,
-      min: 0,
+      min: 0
     },
-
     stock: {
       type: Number,
       default: 0,
-      min: 0,
+      min: 0
     },
-
     category: {
       type: String,
-      default: "",
-      trim: true,
+      default: ""
     },
-
     image: {
       type: String,
-      default: "",
-    },
-
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
+      default: ""
+    }
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
+
+productSchema.index({ tenantId: 1, name: 1 });
 
 module.exports = mongoose.model("Product", productSchema);

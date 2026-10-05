@@ -1,10 +1,14 @@
-﻿require("dotenv").config();
+require("dotenv").config();
 
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
 const tenantRoutes = require("./routes/tenant");
+const authRoutes = require("./routes/auth");
+const productRoutes = require("./routes/product");
+const cartRoutes = require("./routes/cart");
+const orderRoutes = require("./routes/Order");
 
 const app = express();
 
@@ -28,28 +32,38 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/tenants", tenantRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/orders", orderRoutes);
+
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found"
+  });
+});
+
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({
+    success: false,
+    message: err.message || "Internal Server Error"
+  });
+});
 
 const PORT = process.env.PORT || 5000;
 
-async function startServer() {
-  try {
-    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
-
-    if (!mongoUri) {
-      throw new Error("MONGO_URI or MONGODB_URI is missing in .env");
-    }
-
-    await mongoose.connect(mongoUri);
-
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
     console.log("MongoDB connected");
 
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
-  } catch (error) {
-    console.error("Server startup error:", error.message);
-    process.exit(1);
-  }
-}
+  })
+  .catch((err) => {
+    console.error("MongoDB connection failed:", err.message);
+  });
 
-startServer();
