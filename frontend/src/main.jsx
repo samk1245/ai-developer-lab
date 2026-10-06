@@ -7,17 +7,21 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Cart from "./pages/Cart";
+import Orders from "./pages/Orders";
 
 function Home() {
   return (
-    <div style={{padding:"40px"}}>
+    <div style={{ padding: "40px", fontFamily: "Arial" }}>
       <h1>Multi-Tenant E-Commerce</h1>
-      <p>
-        <Link to="/login">Login</Link>{" | "}
-        <Link to="/register">Register</Link>{" | "}
-        <Link to="/products">Products</Link>{" | "}
+
+      <nav style={{ display: "flex", gap: "15px" }}>
+        <Link to="/login">Login</Link>
+        <Link to="/register">Register</Link>
+        <Link to="/dashboard">Dashboard</Link>
+        <Link to="/products">Products</Link>
         <Link to="/cart">Cart</Link>
-      </p>
+        <Link to="/orders">Orders</Link>
+      </nav>
     </div>
   );
 }
@@ -32,6 +36,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/products" element={<Products />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/orders" element={<Orders />} />
       </Routes>
     </BrowserRouter>
   );
