@@ -3,6 +3,8 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const helmet = require("helmet");
+const morgan = require("morgan");
 
 const tenantRoutes = require("./routes/tenant");
 const authRoutes = require("./routes/auth");
@@ -11,6 +13,9 @@ const cartRoutes = require("./routes/cart");
 const orderRoutes = require("./routes/Order");
 
 const app = express();
+
+app.use(helmet());
+app.use(morgan("dev"));
 
 app.use(cors());
 app.use(express.json());
