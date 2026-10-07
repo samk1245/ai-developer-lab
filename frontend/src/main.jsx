@@ -30,7 +30,8 @@ function Home() {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>`r`n        <Route path="/checkout" element={<Checkout />} />
+      <Routes>
+        <Route path="/checkout" element={<Checkout />} />
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -44,4 +45,5 @@ function App() {
 }
 
 createRoot(document.getElementById("root")).render(<App />);
+
 
