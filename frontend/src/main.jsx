@@ -1,3 +1,4 @@
+﻿import Checkout from "./pages/Checkout";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
@@ -29,7 +30,7 @@ function Home() {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <Routes>`r`n        <Route path="/checkout" element={<Checkout />} />
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -43,3 +44,4 @@ function App() {
 }
 
 createRoot(document.getElementById("root")).render(<App />);
+

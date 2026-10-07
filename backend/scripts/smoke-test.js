@@ -11,7 +11,7 @@ async function check(name, url) {
 
 async function main() {
   await check("Health API", `${BASE_URL}/api/health`);
-  await check("Products API", `${BASE_URL}/api/products?tenantId=tenant-a`);
+  const productsResponse = await fetch(`${BASE_URL}/api/products?tenantId=tenant-a`);`r`n  const productsBody = await productsResponse.json();`r`n  if (!productsResponse.ok || productsBody.success !== true) {`r`n    throw new Error("Products API failed");`r`n  }`r`n  const products = productsBody.data || productsBody.products || [];`r`n  for (const product of products) {`r`n    if (product.tenantId && product.tenantId !== "tenant-a") {`r`n      throw new Error("Tenant isolation failed");`r`n    }`r`n  }`r`n  console.log("PASS: Tenant isolation");
   console.log("All API smoke tests passed.");
 }
 
@@ -19,3 +19,4 @@ main().catch((error) => {
   console.error("Smoke tests failed:", error.message);
   process.exit(1);
 });
+
