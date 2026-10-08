@@ -1,7 +1,31 @@
+﻿import { useEffect, useState } from "react";
+import { apiRequest } from "../api";
+
 export default function Orders() {
-  const orders = JSON.parse(
-    localStorage.getItem("orders") || "[]"
-  );
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadOrders() {
+      try {
+        const data = await apiRequest(
+          "/orders?tenantId=tenant-a&userId=demo-user"
+        );
+
+        setOrders(data.orders || []);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadOrders();
+  }, []);
+
+  if (loading) {
+    return <div style={{ padding: 40 }}>Loading orders...</div>;
+  }
 
   return (
     <div style={{
@@ -21,9 +45,7 @@ export default function Orders() {
           marginTop: 25
         }}>
           <h2>No orders yet</h2>
-          <p style={{ color: "#666" }}>
-            Your placed orders will appear here.
-          </p>
+          <p>Your placed orders will appear here.</p>
         </div>
       ) : (
         <div style={{
@@ -31,36 +53,27 @@ export default function Orders() {
           gap: 18,
           marginTop: 25
         }}>
-          {orders.map((order) => (
+          {orders.map(order => (
             <div
-              key={order.id}
+              key={order._id}
               style={{
                 border: "1px solid #e5e7eb",
                 borderRadius: 10,
-                padding: 20,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
+                padding: 20
               }}
             >
               <div style={{
                 display: "flex",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: 10
+                justifyContent: "space-between"
               }}>
-                <strong>{order.id}</strong>
+                <strong>Order #{order._id.slice(-8)}</strong>
 
-                <span style={{
-                  background: "#dcfce7",
-                  color: "#166534",
-                  padding: "5px 10px",
-                  borderRadius: 20,
-                  fontSize: 13
-                }}>
+                <span>
                   {order.status}
                 </span>
               </div>
 
-              <p style={{ color: "#666" }}>
+              <p>
                 {new Date(order.createdAt).toLocaleString()}
               </p>
 
@@ -70,38 +83,28 @@ export default function Orders() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    marginTop: 12
+                    marginTop: 10
                   }}
                 >
                   <span>
-                    {item.name} � {item.quantity}
+                    {item.name} × {item.quantity}
                   </span>
+
                   <strong>
-                    ?{item.price.toLocaleString("en-IN")}
+                    ₹{(item.price * item.quantity).toLocaleString("en-IN")}
                   </strong>
                 </div>
               ))}
 
-              <hr style={{ margin: "18px 0" }} />
+              <hr />
 
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between"
-              }}>
-                <strong>Customer</strong>
-                <span>{order.customer.name}</span>
-              </div>
+              <p>
+                <strong>Customer:</strong> {order.customer.name}
+              </p>
 
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginTop: 8
-              }}>
-                <strong>Total</strong>
-                <strong>
-                  ?{order.total.toLocaleString("en-IN")}
-                </strong>
-              </div>
+              <h3>
+                Total: ₹{order.totalAmount.toLocaleString("en-IN")}
+              </h3>
             </div>
           ))}
         </div>

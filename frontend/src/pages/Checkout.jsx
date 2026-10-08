@@ -1,5 +1,6 @@
-import { useState } from "react";
+ï»¿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiRequest } from "../api";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -22,138 +23,101 @@ export default function Checkout() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
-    const order = {
-      id: "ORD-" + Date.now(),
-      customer: form,
-      status: "Confirmed",
-      total: 259999,
-      createdAt: new Date().toISOString(),
-      items: [
-        {
-          name: "Gaming Laptop",
-          quantity: 1,
-          price: 259999
-        }
-      ]
-    };
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
 
-    const existingOrders =
-      JSON.parse(localStorage.getItem("orders") || "[]");
+    if (!cart.length) {
+      alert("Cart is empty");
+      navigate("/cart");
+      return;
+    }
 
-    localStorage.setItem(
-      "orders",
-      JSON.stringify([order, ...existingOrders])
-    );
+    try {
+      setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
+      const data = await apiRequest("/orders", {
+        method: "POST",
+        body: JSON.stringify({
+          tenantId: "tenant-a",
+          userId: "demo-user",
+          customer: form,
+          items: cart.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity
+          }))
+        })
+      });
+
+      const existingOrders = JSON.parse(
+        localStorage.getItem("orders") || "[]"
+      );
+
+      localStorage.setItem(
+        "orders",
+        JSON.stringify([data.order, ...existingOrders])
+      );
+
+      localStorage.removeItem("cart");
+
+      alert("Order placed successfully!");
       navigate("/orders");
-    }, 600);
+    } catch (error) {
+      alert(error.message || "Failed to place order");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div style={{
-      maxWidth: 850,
+      maxWidth: 700,
       margin: "40px auto",
       padding: 20,
       fontFamily: "Arial"
     }}>
       <h1>Checkout</h1>
-      <p style={{ color: "#666" }}>
-        Enter your delivery details to place your order.
-      </p>
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 300px",
-        gap: 30,
-        marginTop: 30
-      }}>
-        <form onSubmit={handleSubmit}>
-          {[
-            ["name", "Full Name"],
-            ["email", "Email"],
-            ["phone", "Phone"],
-            ["address", "Address"],
-            ["city", "City"],
-            ["pincode", "Pincode"]
-          ].map(([name, label]) => (
-            <div key={name} style={{ marginBottom: 16 }}>
-              <label style={{ fontWeight: 600 }}>{label}</label>
+      <form onSubmit={handleSubmit}>
+        {[
+          ["name", "Full Name"],
+          ["email", "Email"],
+          ["phone", "Phone"],
+          ["address", "Address"],
+          ["city", "City"],
+          ["pincode", "Pincode"]
+        ].map(([name, label]) => (
+          <div key={name} style={{ marginBottom: 15 }}>
+            <label>{label}</label>
 
-              <input
-                name={name}
-                type={name === "email" ? "email" : "text"}
-                value={form[name]}
-                onChange={handleChange}
-                required
-                style={{
-                  display: "block",
-                  width: "100%",
-                  boxSizing: "border-box",
-                  padding: 12,
-                  marginTop: 6,
-                  border: "1px solid #d1d5db",
-                  borderRadius: 6
-                }}
-              />
-            </div>
-          ))}
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%",
-              padding: 14,
-              border: "none",
-              borderRadius: 7,
-              background: loading ? "#9ca3af" : "#2563eb",
-              color: "white",
-              fontSize: 16,
-              fontWeight: 700,
-              cursor: loading ? "not-allowed" : "pointer"
-            }}
-          >
-            {loading ? "Placing Order..." : "Place Order"}
-          </button>
-        </form>
-
-        <div style={{
-          border: "1px solid #e5e7eb",
-          borderRadius: 10,
-          padding: 20,
-          height: "fit-content",
-          background: "#f9fafb"
-        }}>
-          <h2>Order Summary</h2>
-
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            margin: "20px 0"
-          }}>
-            <span>Gaming Laptop × 1</span>
-            <strong>?2,59,999</strong>
+            <input
+              name={name}
+              value={form[name]}
+              onChange={handleChange}
+              required
+              style={{
+                display: "block",
+                width: "100%",
+                padding: 10,
+                marginTop: 5,
+                boxSizing: "border-box"
+              }}
+            />
           </div>
+        ))}
 
-          <hr />
-
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginTop: 20,
-            fontSize: 18
-          }}>
-            <strong>Total</strong>
-            <strong>?2,59,999</strong>
-          </div>
-        </div>
-      </div>
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            padding: "12px 20px",
+            cursor: loading ? "not-allowed" : "pointer"
+          }}
+        >
+          {loading ? "Placing Order..." : "Place Order"}
+        </button>
+      </form>
     </div>
   );
 }

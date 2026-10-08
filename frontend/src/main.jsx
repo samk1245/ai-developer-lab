@@ -1,25 +1,33 @@
-import React from "react";
+﻿import React from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
-
-import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Cart from "./pages/Cart";
 import Orders from "./pages/Orders";
-import Checkout from "./pages/Checkout";
-import NotFound from "./pages/NotFound";
+
+function Home() {
+  return (
+    <div style={{ padding: "40px", fontFamily: "Arial" }}>
+      <h1>Multi-Tenant E-Commerce</h1>
+      <nav style={{ display: "flex", gap: "15px", flexWrap: "wrap" }}>
+        <Link to="/login">Login</Link>
+        <Link to="/register">Register</Link>
+        <Link to="/dashboard">Dashboard</Link>
+        <Link to="/products">Products</Link>
+        <Link to="/cart">Cart</Link>
+        <Link to="/orders">Orders</Link>
+      </nav>
+    </div>
+  );
+}
 
 function App() {
   return (
     <BrowserRouter>
-      <Navbar />
-
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -28,11 +36,7 @@ function App() {
         <Route path="/products" element={<Products />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/orders" element={<Orders />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="*" element={<NotFound />} />
       </Routes>
-
-      <Footer />
     </BrowserRouter>
   );
 }
