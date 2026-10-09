@@ -1,4 +1,5 @@
-﻿import React from "react";
+﻿import Inventory from "./pages/Inventory";
+import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 
@@ -29,6 +30,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+      <Route path="/inventory" element={<Inventory />} />
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -42,3 +44,4 @@ function App() {
 }
 
 createRoot(document.getElementById("root")).render(<App />);
+

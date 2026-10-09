@@ -1,4 +1,4 @@
-require("dotenv").config();
+﻿require("dotenv").config();
 
 const express = require("express");
 const mongoose = require("mongoose");
@@ -11,6 +11,8 @@ const authRoutes = require("./routes/auth");
 const productRoutes = require("./routes/product");
 const cartRoutes = require("./routes/cart");
 const orderRoutes = require("./routes/Order");
+const inventoryRoutes = require("./routes/inventory");
+const inventorySummaryRoutes = require("./routes/inventorySummary");
 
 const app = express();
 
@@ -41,6 +43,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/inventory", inventorySummaryRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -71,4 +75,5 @@ mongoose
   .catch((err) => {
     console.error("MongoDB connection failed:", err.message);
   });
+
 
