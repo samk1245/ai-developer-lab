@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const API = "http://localhost:5000/api/inventory/summary?tenantId=tenant-a";
 
@@ -23,6 +23,9 @@ export default function Inventory() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatedAt, setUpdatedAt] = useState(null);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
+  const [sortBy, setSortBy] = useState("stock-asc");
 
   const loadInventory = useCallback(async () => {
     setLoading(true);
@@ -52,6 +55,19 @@ export default function Inventory() {
   const summary = data?.summary || {};
   const lowStock = data?.lowStockProducts || [];
   const outOfStock = data?.outOfStockProducts || [];
+  const allProducts = [...lowStock, ...outOfStock];
+  const categories = ["All", ...new Set(allProducts.map(p => p.category || "General"))];
+  const filterProducts = (products) => products
+    .filter(p => (p.name || "").toLowerCase().includes(search.toLowerCase()))
+    .filter(p => category === "All" || (p.category || "General") === category)
+    .sort((a, b) => {
+      if (sortBy === "stock-desc") return Number(b.stock || 0) - Number(a.stock || 0);
+      if (sortBy === "price-desc") return Number(b.price || 0) - Number(a.price || 0);
+      if (sortBy === "price-asc") return Number(a.price || 0) - Number(b.price || 0);
+      return Number(a.stock || 0) - Number(b.stock || 0);
+    });
+  const filteredLowStock = filterProducts(lowStock);
+  const filteredOutOfStock = filterProducts(outOfStock);
 
   const stats = [
     {
@@ -268,6 +284,47 @@ export default function Inventory() {
         </section>
 
         <section style={{
+          ...cardStyle,
+          marginBottom: 22,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: 14
+        }}>
+          <input
+            aria-label="Search products"
+            placeholder="Search product name..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ padding: 12, border: "1px solid #cbd5e1", borderRadius: 9, minWidth: 0 }}
+          />
+          <select
+            aria-label="Filter by category"
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+            style={{ padding: 12, border: "1px solid #cbd5e1", borderRadius: 9, background: "#fff" }}
+          >
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select
+            aria-label="Sort inventory"
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+            style={{ padding: 12, border: "1px solid #cbd5e1", borderRadius: 9, background: "#fff" }}
+          >
+            <option value="stock-asc">Stock: Low to High</option>
+            <option value="stock-desc">Stock: High to Low</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+          </select>
+          <button
+            onClick={() => { setSearch(""); setCategory("All"); setSortBy("stock-asc"); }}
+            style={{ padding: 12, border: "1px solid #cbd5e1", borderRadius: 9, background: "#f8fafc", cursor: "pointer" }}
+          >
+            Clear Filters
+          </button>
+        </section>
+
+        <section style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
           gap: 20
@@ -298,7 +355,7 @@ export default function Inventory() {
               <p>Loading inventory...</p>
             ) : (
               <ProductTable
-                products={lowStock}
+                products={filteredLowStock}
                 emptyText="No low-stock products reported."
               />
             )}
@@ -330,7 +387,7 @@ export default function Inventory() {
               <p>Loading inventory...</p>
             ) : (
               <ProductTable
-                products={outOfStock}
+                products={filteredOutOfStock}
                 emptyText="No out-of-stock products reported."
               />
             )}
