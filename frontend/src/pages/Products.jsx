@@ -1,250 +1,149 @@
-import { useEffect, useMemo, useState } from "react";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const TENANT_ID = import.meta.env.VITE_TENANT_ID || "tenant-a";
+﻿import { useEffect, useMemo, useState } from "react";
+import { apiRequest } from "../api";
 
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
-  const [stockFilter, setStockFilter] = useState("all");
-  const [sort, setSort] = useState("default");
+  const [category, setCategory] = useState("All");
+  const [sort, setSort] = useState("featured");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadProducts = () => {
-    setLoading(true);
-    setError("");
+  async function loadProducts() {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await apiRequest("/products?tenantId=tenant-a");
+      setProducts(Array.isArray(data.products) ? data.products : []);
+    } catch (err) {
+      setError(err.message || "Products could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-    fetch(`${API_URL}/api/products?tenantId=${TENANT_ID}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load products");
-        return res.json();
-      })
-      .then((data) => {
-        setProducts(data.products || data.data || []);
-      })
-      .catch(() => {
-        setError("Unable to load products. Make sure the backend is running.");
-      })
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
+  useState(() => {
     loadProducts();
   }, []);
 
-  const filteredProducts = useMemo(() => {
-    let result = [...products];
+  const categories = useMemo(
+    () => ["All", ...new Set(products.map(p => p.category).filter(Boolean))],
+    [products]
+  );
 
-    const keyword = search.trim().toLowerCase();
+  const visibleProducts = useMemo(() => {
+    let result = products.filter(p =>
+      `${p.name || ""} ${p.description || ""} ${p.category || ""}`
+        .toLowerCase().includes(search.toLowerCase())
+    );
 
-    if (keyword) {
-      result = result.filter((product) =>
-        `${product.name || ""} ${product.description || ""}`
-          .toLowerCase()
-          .includes(keyword)
-      );
+    if (category !== "All") {
+      result = result.filter(p => p.category === category);
     }
 
-    if (stockFilter === "in-stock") {
-      result = result.filter((product) => Number(product.stock) > 0);
-    }
-
-    if (stockFilter === "out-of-stock") {
-      result = result.filter((product) => Number(product.stock) <= 0);
-    }
-
-    if (sort === "low-high") {
-      result.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
-    }
-
-    if (sort === "high-low") {
-      result.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
-    }
+    if (sort === "price-low") result.sort((a, b) => a.price - b.price);
+    if (sort === "price-high") result.sort((a, b) => b.price - a.price);
+    if (sort === "name") result.sort((a, b) => a.name.localeCompare(b.name));
 
     return result;
-  }, [products, search, stockFilter, sort]);
+  }, [products, search, category, sort]);
+
+  function addToCart(product) {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const existing = cart.find(item => item.productId === product._id);
+
+    if (existing) {
+      if (existing.quantity >= product.stock) {
+        alert("Available stock limit reached.");
+        return;
+      }
+      existing.quantity += 1;
+    } else {
+      cart.push({
+        productId: product._id,
+        name: product.name,
+        price: product.price,
+        quantity: 1
+      });
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    alert(`${product.name} added to cart`);
+  }
 
   return (
-    <div style={{
-      maxWidth: 1150,
-      margin: "40px auto",
-      padding: "20px",
-      fontFamily: "Arial"
-    }}>
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: 15,
-        flexWrap: "wrap"
-      }}>
+    <main className="catalog-page">
+      <section className="catalog-heading">
         <div>
-          <h1 style={{ marginBottom: 5 }}>Products</h1>
-          <p style={{ color: "#666" }}>
-            {filteredProducts.length} product(s) available
-          </p>
+          <span className="catalog-eyebrow">THE EVERYDAY STORE</span>
+          <h1>Find your next favourite.</h1>
+          <p>Explore products, compare prices and shop with ease.</p>
         </div>
+        <span className="catalog-count">{visibleProducts.length} products</span>
+      </section>
 
-        <button
-          onClick={loadProducts}
-          style={{
-            padding: "10px 16px",
-            border: "1px solid #d1d5db",
-            background: "white",
-            borderRadius: 7,
-            cursor: "pointer"
-          }}
-        >
-          ? Refresh
-        </button>
-      </div>
-
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "2fr 1fr 1fr",
-        gap: 12,
-        margin: "25px 0"
-      }}>
+      <section className="catalog-toolbar">
         <input
-          placeholder="Search products..."
+          aria-label="Search products"
+          placeholder="Search products, categories..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            padding: 12,
-            border: "1px solid #d1d5db",
-            borderRadius: 7
-          }}
+          onChange={e => setSearch(e.target.value)}
         />
-
-        <select
-          value={stockFilter}
-          onChange={(e) => setStockFilter(e.target.value)}
-          style={{
-            padding: 12,
-            border: "1px solid #d1d5db",
-            borderRadius: 7
-          }}
-        >
-          <option value="all">All Stock</option>
-          <option value="in-stock">In Stock</option>
-          <option value="out-of-stock">Out of Stock</option>
+        <select aria-label="Filter by category" value={category}
+          onChange={e => setCategory(e.target.value)}>
+          {categories.map(c => <option key={c}>{c}</option>)}
         </select>
-
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          style={{
-            padding: 12,
-            border: "1px solid #d1d5db",
-            borderRadius: 7
-          }}
-        >
-          <option value="default">Sort: Default</option>
-          <option value="low-high">Price: Low to High</option>
-          <option value="high-low">Price: High to Low</option>
+        <select aria-label="Sort products" value={sort}
+          onChange={e => setSort(e.target.value)}>
+          <option value="featured">Recommended</option>
+          <option value="price-low">Price: Low to High</option>
+          <option value="price-high">Price: High to Low</option>
+          <option value="name">Name: A to Z</option>
         </select>
-      </div>
+        <button className="catalog-refresh" onClick={loadProducts}>Refresh</button>
+      </section>
 
-      {loading && (
-        <div style={{ textAlign: "center", padding: 50 }}>
-          <h2>Loading products...</h2>
-        </div>
-      )}
-
-      {!loading && error && (
-        <div style={{
-          padding: 25,
-          borderRadius: 10,
-          background: "#fef2f2",
-          color: "#b91c1c",
-          textAlign: "center"
-        }}>
-          <h3>Unable to load products</h3>
-          <p>{error}</p>
-          <button onClick={loadProducts}>Try Again</button>
-        </div>
-      )}
-
-      {!loading && !error && filteredProducts.length === 0 && (
-        <div style={{
-          padding: 50,
-          textAlign: "center",
-          border: "1px solid #e5e7eb",
-          borderRadius: 10
-        }}>
+      {loading ? <p className="catalog-message">Loading products...</p> :
+        error ? <div className="catalog-message">
+          <p>{error}</p><button onClick={loadProducts}>Try again</button>
+        </div> :
+        visibleProducts.length === 0 ? <div className="catalog-message">
           <h2>No products found</h2>
-          <p style={{ color: "#666" }}>
-            Try changing your search or filters.
-          </p>
-        </div>
-      )}
-
-      {!loading && !error && filteredProducts.length > 0 && (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-          gap: 20
-        }}>
-          {filteredProducts.map((product) => {
-            const stock = Number(product.stock || 0);
-            const available = stock > 0;
-
-            return (
-              <article
-                key={product._id || product.id}
-                style={{
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 12,
-                  padding: 20,
-                  background: "white",
-                  boxShadow: "0 3px 12px rgba(0,0,0,0.06)"
-                }}
-              >
-                <div style={{
-                  height: 150,
-                  borderRadius: 9,
-                  background: "#f3f4f6",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 50
-                }}>
-                  ???
-                </div>
-
+          <p>Try another search or category.</p>
+          <button onClick={() => { setSearch(""); setCategory("All"); }}>
+            Clear filters
+          </button>
+        </div> :
+        <section className="catalog-grid">
+          {visibleProducts.map(product => (
+            <article className="catalog-card" key={product._id}>
+              <div className="catalog-image">
+                {product.image ?
+                  <img src={product.image} alt={product.name} loading="lazy" /> :
+                  <span>🛍️</span>}
+                <span className={`stock-pill ${product.stock > 0 ? "in-stock" : "out-stock"}`}>
+                  {product.stock > 0 ? "In stock" : "Out of stock"}
+                </span>
+              </div>
+              <div className="catalog-card-body">
+                <span className="catalog-category">{product.category || "General"}</span>
                 <h2>{product.name}</h2>
-
-                <p style={{
-                  color: "#6b7280",
-                  minHeight: 45
-                }}>
-                  {product.description || "Quality product available now."}
+                <p className="catalog-description">
+                  {product.description || "A great addition to your everyday essentials."}
                 </p>
-
-                <div style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginTop: 15
-                }}>
-                  <strong style={{ fontSize: 21 }}>
-                    ?{Number(product.price || 0).toLocaleString("en-IN")}
-                  </strong>
-
-                  <span style={{
-                    color: available ? "#15803d" : "#dc2626",
-                    fontSize: 14,
-                    fontWeight: 600
-                  }}>
-                    {available ? `${stock} in stock` : "Out of stock"}
-                  </span>
+                <div className="catalog-card-bottom">
+                  <strong>₹{Number(product.price || 0).toLocaleString("en-IN")}</strong>
+                  <button disabled={!(product.stock > 0)}
+                    onClick={() => addToCart(product)}>
+                    {product.stock > 0 ? "Add to cart +" : "Unavailable"}
+                  </button>
                 </div>
-              </article>
-            );
-          })}
-        </div>
-      )}
-    </div>
+              </div>
+            </article>
+          ))}
+        </section>
+      }
+    </main>
   );
 }
+
